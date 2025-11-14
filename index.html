@@ -1,0 +1,177 @@
+<!--
+Save this file as `index.html` at the root of a repository named `USERNAME.github.io`.
+Replace USERNAME with your GitHub username. Then push to GitHub — Pages will serve it at https://USERNAME.github.io
+
+Template features:
+- Responsive single-page blog layout
+- Simple CSS (no external dependencies)
+- JavaScript-based post list (easy to add posts inside the `posts` array)
+- Search box, dark mode toggle, and RSS link placeholder
+-->
+
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>나의 GitHub 블로그</title>
+  <meta name="description" content="간단한 GitHub Pages 블로그 템플릿" />
+
+  <style>
+    :root{--bg:#fcfcfd;--card:#fff;--text:#0f172a;--muted:#6b7280;--accent:#2563eb}
+    [data-theme="dark"]{--bg:#0b1220;--card:#071226;--text:#e6eef8;--muted:#94a3b8;--accent:#60a5fa}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+    .container{max-width:960px;margin:32px auto;padding:0 20px}
+
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:28px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7c3aed);display:inline-grid;place-items:center;color:white;font-weight:700}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:2px 0 0;color:var(--muted);font-size:14px}
+
+    .controls{display:flex;gap:8px;align-items:center}
+    .btn{background:transparent;border:1px solid rgba(0,0,0,0.06);padding:8px 10px;border-radius:8px;cursor:pointer}
+    .search{padding:8px;border-radius:10px;border:1px solid #e6e9ef;background:transparent}
+
+    main{display:grid;grid-template-columns:1fr 320px;gap:24px}
+    @media (max-width:880px){main{grid-template-columns:1fr} .aside{order:2}}
+
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(13,24,40,0.06)}
+    .post{margin-bottom:18px}
+    .post h2{margin:0 0 6px;font-size:18px}
+    .meta{color:var(--muted);font-size:13px}
+    .excerpt{color:var(--muted);font-size:15px;margin-top:8px}
+
+    .aside .card + .card{margin-top:16px}
+    footer{color:var(--muted);text-align:center;margin:34px 0 60px;font-size:13px}
+
+    a{color:var(--accent);text-decoration:none}
+
+    /* small utilities */
+    .tag{display:inline-block;padding:6px 8px;border-radius:999px;border:1px solid rgba(0,0,0,0.06);font-size:12px;margin-right:6px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">B</div>
+        <div>
+          <h1>나의 GitHub 블로그</h1>
+          <p class="lead">개발 기록과 메모를 남기는 곳</p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <input id="q" class="search" placeholder="검색어 입력 (제목 또는 태그)" />
+        <button id="themeBtn" class="btn" title="다크 모드 전환">🌓</button>
+        <a class="btn" href="#rss">RSS</a>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <div id="posts" class="card">
+          <!-- posts injected by JS -->
+        </div>
+
+        <div id="postContent" style="display:none;margin-top:18px" class="card"></div>
+      </section>
+
+      <aside class="aside">
+        <div class="card">
+          <h3 style="margin-top:0">소개</h3>
+          <p class="meta">간단한 블로그 템플릿입니다. 이 파일 하나로 GitHub Pages에 올려 바로 사용 가능합니다.</p>
+          <div style="margin-top:10px">
+            <span class="tag">개발</span>
+            <span class="tag">기록</span>
+            <span class="tag">잡기술</span>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h4 style="margin:0 0 8px 0">최근 글</h4>
+          <ul id="recent" style="padding-left:18px;margin:0;color:var(--muted)"></ul>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      © <span id="year"></span> 나의 GitHub 블로그 · <a href="https://github.com">GitHub</a>
+    </footer>
+  </div>
+
+  <script>
+    // ====== POSTS: 편집하는 곳 ======
+    // 각 포스트는 {id, title, date, tags, content (HTML or plain text), excerpt}
+    const posts = [
+      {
+        id: 'welcome',
+        title: '블로그 시작합니다 — 첫 글',
+        date: '2025-11-14',
+        tags: ['시작','공지'],
+        excerpt: 'GitHub Pages에 올리는 간단한 블로그 템플릿입니다. 이곳에 첫 글을 남겨보세요.',
+        content: `<p>안녕하세요 — 첫 글입니다. 이 템플릿을 수정해서 사용하세요.</p>
+                  <p>글을 추가하려면 <code>posts</code> 배열에 새 항목을 추가하면 됩니다.</p>`
+      }
+    ];
+
+    // helper: render list and single post
+    const postsDiv = document.getElementById('posts');
+    const postContent = document.getElementById('postContent');
+    const recent = document.getElementById('recent');
+
+    function renderList(filter = ''){
+      postContent.style.display = 'none';
+      postsDiv.style.display = 'block';
+      postsDiv.innerHTML = '';
+      const q = filter.trim().toLowerCase();
+      const filtered = posts.filter(p => (p.title + p.tags.join(' ') + p.excerpt).toLowerCase().includes(q));
+      if(!filtered.length) postsDiv.innerHTML = '<p style="margin:0">표시할 글이 없습니다.</p>';
+      for(const p of filtered){
+        const el = document.createElement('div'); el.className = 'post';
+        el.innerHTML = `<h2><a href="#${p.id}">${p.title}</a></h2>
+                        <div class='meta'>${p.date} · ${p.tags.join(', ')}</div>
+                        <div class='excerpt'>${p.excerpt || ''}</div>`;
+        postsDiv.appendChild(el);
+      }
+      // update recent
+      recent.innerHTML = posts.slice(0,5).map(p=>`<li><a href="#${p.id}">${p.title}</a></li>`).join('');
+    }
+
+    function renderPost(id){
+      const p = posts.find(x=>x.id===id); if(!p) return renderList();
+      postsDiv.style.display = 'none'; postContent.style.display = 'block';
+      postContent.innerHTML = `<h2 style="margin-top:0">${p.title}</h2>
+                                <div class='meta'>${p.date} · ${p.tags.join(', ')}</div>
+                                <hr />
+                                <div>${p.content}</div>`;
+    }
+
+    // router: read hash
+    function router(){
+      const id = location.hash.replace('#','');
+      if(id) renderPost(id); else renderList(document.getElementById('q').value);
+    }
+
+    window.addEventListener('hashchange',router);
+
+    // search box
+    document.getElementById('q').addEventListener('input', e=>renderList(e.target.value));
+
+    // dark mode toggle
+    const themeBtn = document.getElementById('themeBtn');
+    function setTheme(t){ if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme'); }
+    themeBtn.addEventListener('click', ()=>{
+      const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+      setTheme(isDark? 'light':'dark');
+    });
+
+    // init
+    document.getElementById('year').textContent = new Date().getFullYear();
+    renderList(); router();
+  </script>
+</body>
+</html>
